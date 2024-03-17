@@ -1,3 +1,5 @@
+"""This module sets up the package for installation."""
+
 from setuptools import setup, find_packages
 
 setup(
