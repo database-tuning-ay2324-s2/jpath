@@ -49,7 +49,6 @@ Querying for a List of Names
 ```
 names = jpath_instance.query("/root/employees/item/name")
 ```
-print(names)
 Finding Specific Employee Details
 ```
 employee_details = jpath_instance.query("/root/employees/item[id='2']")
