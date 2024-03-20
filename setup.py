@@ -9,7 +9,4 @@ setup(
     author='Yeu Chen Yuan, Zhou Qianqian, Xu Yijie, Tay Weida',
     author_email='',
     packages=find_packages(),
-    install_requires=[
-        'lxml',  
-    ],
 )
