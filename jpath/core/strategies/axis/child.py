@@ -9,7 +9,7 @@ ONLY SUPPORTS NODE_TEST OF "NAME" for now
 
 
 class ChildStrategy(Strategy):
-    def apply(self, result, step):
+    def apply(result, step):
         json_data = result.json_data
         node_test = step.node_test
 
@@ -19,7 +19,7 @@ class ChildStrategy(Strategy):
         results = []
         if type(json_data) == list:
             for item in json_data:
-                result = self.apply(Result(item), step)
+                result = ChildStrategy.apply(Result(item), step)
                 if result:
                     results.extend(result)
         elif type(json_data) == dict:

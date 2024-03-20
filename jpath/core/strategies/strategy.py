@@ -6,5 +6,5 @@ from typing import List
 
 class Strategy:
     @abstractmethod
-    def apply(self, result: Result, step: Step) -> List[Result]:
+    def apply(result: Result, step: Step) -> List[Result]:
         pass

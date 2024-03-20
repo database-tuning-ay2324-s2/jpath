@@ -21,9 +21,8 @@ class JPath:
             raise ValueError(f"Invalid JSON data type: {type(json_data)}")
 
     def query(self, jpath_expr) -> str:
-        tokens = self.parser.tokenize(jpath_expr)
-        query = self.parser.parse(tokens)
-        return self._query(jpath_expr, query)
+        query = self.parser.parse(jpath_expr)
+        return self._query(query)
 
     # Query by a provided query object
     def _query(self, query):
