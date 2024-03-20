@@ -3,10 +3,12 @@
 JPath is a Python library that enables XPath-like querying of JSON data. JPath allows users to apply XPath expressions to JSON, facilitating complex data retrieval with the ease and flexibility of XPath. Since the syntax of JPath is almost similar to XPath, there is no need to relearn a new language. You can simply apply your current skill of XPath querying!
 
 Features
+
 Apply XPath-like expressions to JSON data.
 Extract specific parts of JSON based on the query.
 
 Installation
+
 Currently, JPath is not available as a package in PyPI. To use JPath, clone the repository or copy the code into your project.
 
 ## Sample JSON data
