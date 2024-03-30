@@ -96,16 +96,24 @@ class Parser:
 
     # TODO: parse nested predicates e.g. /child::A[child::B[child::C = 3]]
     def _parse_predicate(self, predicate_str: str) -> Predicate:
-        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS}
+        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL}
 
         # take out brackets
         predicate_str = predicate_str[1:-1]
 
         operator_str = None
-        if "=" in predicate_str:
-            operator_str = "="
+        if ">=" in predicate_str:
+            operator_str = ">="
         elif "!=" in predicate_str:
             operator_str = "!="
+        elif "<=" in predicate_str:
+            operator_str = "<="
+        elif "=" in predicate_str:
+            operator_str = "="
+        elif "<" in predicate_str:
+            operator_str = "<"
+        elif ">" in predicate_str:
+            operator_str = ">"
 
         if operator_str:
             left_operand_str, right_operand_str = predicate_str.split(operator_str, 1)
