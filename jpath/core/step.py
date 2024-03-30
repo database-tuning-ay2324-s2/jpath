@@ -38,6 +38,8 @@ class Operator(Enum):
     LESS_THAN = 4
     GREATER_THAN_OR_EQUAL = 5
     LESS_THAN_OR_EQUAL = 6
+    ARRAY_SELECT_SINGLE = 7
+    ARRAY_SELECT_SLICE = 8
 
 class Predicate:
     # Example 1: [child::car_code = '1234'] Check if the element has a child element with the name car_code and the value is 1234

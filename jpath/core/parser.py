@@ -1,3 +1,4 @@
+import re
 from jpath.core.query import Query
 from jpath.core.step import Step, Axis, NodeTest, NodeTestType, Predicate, Operator
 
@@ -42,7 +43,9 @@ class Parser:
         # Parsing the last step if any
         if current_step:
             step, predicates = self._parse_step(current_step, current_predicate)
-            step.predicates.extend(predicates)
+            for predicate in predicates:
+                #step.predicates.extend(predicate)
+                step.add_predicate(predicate)
             query_obj.add_step(step)
 
         return query_obj
@@ -88,16 +91,20 @@ class Parser:
         predicates = []
 
         # Parsing predicates
-        if "[" in predicate_str and "]" in predicate_str:
-            predicate = self._parse_predicate(predicate_str)
-            predicates.append(predicate)
+        sub_predicate_str = predicate_str.split("]")
+        if not sub_predicate_str[-1]:
+            sub_predicate_str.pop()
+        for sub_p_str in sub_predicate_str:
+            sub_p_str += "]"
+            if "[" in predicate_str and "]" in sub_p_str:
+                predicate = self._parse_predicate(sub_p_str)
+                predicates.append(predicate)
 
         return node_test, predicates
 
     # TODO: parse nested predicates e.g. /child::A[child::B[child::C = 3]]
     def _parse_predicate(self, predicate_str: str) -> Predicate:
-        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL}
-
+        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL, "sel": Operator.ARRAY_SELECT_SINGLE, ":": Operator.ARRAY_SELECT_SLICE}
         # take out brackets
         predicate_str = predicate_str[1:-1]
 
@@ -114,8 +121,25 @@ class Parser:
             operator_str = "<"
         elif ">" in predicate_str:
             operator_str = ">"
+        elif re.match(r"^\d*$", predicate_str):
+            operator_str = "sel"
+        elif ":" in predicate_str and re.match(r"[0-9]:[0-9]", predicate_str):
+            operator_str = ":"
 
-        if operator_str:
+        if operator_str == "sel":
+            return Predicate(predicate_str)
+        if operator_str == ":":
+            if re.match(r"[0-9]:[0-9]:[0-9]", predicate_str):
+                left_operand_str = predicate_str.split(":")[0] + ":" + predicate_str.split(":")[1]
+                right_operand_str = predicate_str.split(":")[-1]
+            else:
+                left_operand_str = predicate_str
+                right_operand_str = "1"
+
+            return Predicate(
+                left_operand_str, operator_map[operator_str], right_operand_str
+            )
+        elif operator_str:
             left_operand_str, right_operand_str = predicate_str.split(operator_str, 1)
             left_operand_str = left_operand_str.strip()
 
