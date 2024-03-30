@@ -63,46 +63,73 @@ class Evaluator:
             # no predicate to apply
             return results
 
-        #  only supports 1 predicate for now (i.e. no AND or OR predicates)
-        if len(step.predicates) > 1:
-            raise NotImplementedError("Only 1 predicate is supported for now")
-        predicate: Predicate = step.predicates[0]
-
-        left_operand = predicate.left_operand
+        # Do not support multiple parallel predicates (i.e. no AND or OR predicates)
+        # Support result(s) selection by array index/index range
         new_results = []
+        for predicate in step.predicates:
+            predicate: Predicate = predicate
 
-        for result in results:
-            # for each curr result, see if the left operand can evaluate to true
-            query = Query()
-            query.steps = left_operand
-            json_data = result.json_data
+            if len(new_results) > 0 and len(step.predicates) > 1:
+                # Array select slice
+                if predicate.operator is Operator.ARRAY_SELECT_SLICE:
+                    new_results_slices = []
 
-            if type(json_data) == list:
-                starting_points = json_data
-            else:
-                starting_points = [json_data]
+                    max_bound = len(new_results)
+                    left_bound, right_bound = map(int, predicate.left_operand.split(":"))
+                    slice_step = int(predicate.right_operand)
+                    right_bound = min(right_bound, max_bound)
 
-            for starting_point in starting_points:
-                left_operand_results = self.evaluate(query, starting_point)
-                if not left_operand_results:
-                    # does not evaluate to true, skip this result
-                    continue
-
-                if predicate.operator:
-                    # has operator e.g. [child::age > 20]
-                    if all(
-                        [
-                            (type(r) == str or type(r == int))
-                            and compare(
-                                str(r), predicate.operator, predicate.right_operand
-                            )
-                            for r in left_operand_results
-                        ]
-                    ):
-                        new_results.append(Result(starting_point))
-
+                    if 0 <= left_bound <= right_bound <= max_bound:
+                        for next_index in range(left_bound, right_bound, slice_step):
+                            new_results_slices.append(new_results[next_index])
+                        new_results = new_results_slices
+                    else:
+                        new_results = []
+                # Array select single
                 else:
-                    # no operator e.g. [child::age]
-                    new_results.append(Result(starting_point))
+                    isInteger = True
+                    try:
+                        index = int(predicate.left_operand)
+                    except:
+                        isInteger = False
+                    
+                    if isInteger and 0 <= index < len(new_results):
+                        new_results = [new_results[index]]
+            else:
+                left_operand = predicate.left_operand
+
+                for result in results:
+                    # for each curr result, see if the left operand can evaluate to true
+                    query = Query()
+                    query.steps = left_operand
+                    json_data = result.json_data
+
+                    if type(json_data) == list:
+                        starting_points = json_data
+                    else:
+                        starting_points = [json_data]
+
+                    for starting_point in starting_points:
+                        left_operand_results = self.evaluate(query, starting_point)
+                        if not left_operand_results:
+                            # does not evaluate to true, skip this result
+                            continue
+
+                        if predicate.operator:
+                            # has operator e.g. [child::age > 20]
+                            if all(
+                                [
+                                    (type(r) == str or type(r == int))
+                                    and compare(
+                                        str(r), predicate.operator, predicate.right_operand
+                                    )
+                                    for r in left_operand_results
+                                ]
+                            ):
+                                new_results.append(Result(starting_point))
+
+                        else:
+                            # no operator e.g. [child::age]
+                            new_results.append(Result(starting_point))
 
         return new_results
