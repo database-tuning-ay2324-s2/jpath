@@ -31,3 +31,4 @@ class JPath:
 
     def format_results(results):
         return "\n".join([str(result) for result in results])
+

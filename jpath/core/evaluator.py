@@ -32,19 +32,33 @@ class Evaluator:
         return new_results
 
     def apply_predicate(self, results: List[Result], step: Step) -> List[Result]:
+
         def compare(r, predicate_operator, right_operand):
-            if right_operand[0] == '"' and right_operand[-1] == '"':
-                right_operand = right_operand[1:-1]
-            if r[0] == '"' and r[-1] == '"':
-                r = r[1:-1]
+
+            def parse_to_desired_type(value):
+                try:
+                    return float(value) # a number
+                except ValueError:
+                    return value[1:-1] # a string
+                                
+            r = parse_to_desired_type(r)
+            right_operand = parse_to_desired_type(right_operand)
 
             if predicate_operator == Operator.EQUALS:
                 return r == right_operand
             elif predicate_operator == Operator.NOT_EQUALS:
                 return r != right_operand
+            elif predicate_operator == Operator.GREATER_THAN:
+                return r > right_operand
+            elif predicate_operator == Operator.LESS_THAN:
+                return r < right_operand
+            elif predicate_operator == Operator.GREATER_THAN_OR_EQUAL:
+                return r >= right_operand
+            elif predicate_operator == Operator.LESS_THAN_OR_EQUAL:
+                return r <= right_operand
             else:
                 raise ValueError(f"Unknown operator: {predicate_operator}")
-
+            
         if not step.predicates:
             # no predicate to apply
             return results
