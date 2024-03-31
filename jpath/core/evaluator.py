@@ -33,18 +33,30 @@ class Evaluator:
         return new_results
 
     def compare(self, r, predicate_operator, right_operand):
-        if right_operand[0] == '"' and right_operand[-1] == '"':
-            right_operand = right_operand[1:-1]
-        if r[0] == '"' and r[-1] == '"':
-            r = r[1:-1]
+        def parse_to_desired_type(value):
+            try:
+                return float(value) # a number
+            except ValueError:
+                return value[1:-1] # a string
+                            
+        r = parse_to_desired_type(r)
+        right_operand = parse_to_desired_type(right_operand)
 
         if predicate_operator == Operator.EQUALS:
             return r == right_operand
         elif predicate_operator == Operator.NOT_EQUALS:
             return r != right_operand
+        elif predicate_operator == Operator.GREATER_THAN:
+            return r > right_operand
+        elif predicate_operator == Operator.LESS_THAN:
+            return r < right_operand
+        elif predicate_operator == Operator.GREATER_THAN_OR_EQUAL:
+            return r >= right_operand
+        elif predicate_operator == Operator.LESS_THAN_OR_EQUAL:
+            return r <= right_operand
         else:
             raise ValueError(f"Unknown operator: {predicate_operator}")
-
+            
     def apply_predicate(self, orig_results: List[Result], results: List[Result], step: Step) -> List[Result]:
         if not step.predicates:
             # no predicate to apply
@@ -59,9 +71,8 @@ class Evaluator:
         # Do not support multiple parallel predicates (i.e. no AND or OR predicates)
         # Support result(s) selection by array index/index range
         new_results = []
-        for predicate in step.predicates:
-            predicate: Predicate = predicate
-
+        # for predicate in step.predicates:
+        #    predicate: Predicate = predicate
         if len(step.predicates) > 1:
             query = Query()
             query.add_step(Step(step.axis, step.node_test))
@@ -73,9 +84,6 @@ class Evaluator:
             next_step.predicates = next_step.predicates[1:]
             return self.apply_predicate(orig_results, new_results, next_step)
 
-        # print("START RESULTS")
-        # print(results)
-        # print("END RESULTS")
         for i, result in enumerate(results):
             # for each curr result, see if the left operand can evaluate to true
             query = Query()

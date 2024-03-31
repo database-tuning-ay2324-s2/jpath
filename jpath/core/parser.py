@@ -43,9 +43,7 @@ class Parser:
         # Parsing the last step if any
         if current_step:
             step, predicates = self._parse_step(current_step, current_predicate)
-            for predicate in predicates:
-                #step.predicates.extend(predicate)
-                step.add_predicate(predicate)
+            step.predicates.extend(predicates)
             query_obj.add_step(step)
 
         return query_obj
@@ -91,44 +89,44 @@ class Parser:
         predicates = []
 
         # Parsing predicates
-        if "[" in predicate_str and "]" in predicate_str:
-            predicate = self._parse_predicate(predicate_str, [])
-            predicates.extend(predicate)
-        # sub_predicate_str = predicate_str.split("]")
-        # if not sub_predicate_str[-1]:
-        #    sub_predicate_str.pop()
-        # for sub_p_str in sub_predicate_str:
-        #    sub_p_str += "]"
-        #    if "[" in predicate_str and "]" in sub_p_str:
-        #        predicate = self._parse_predicate(sub_p_str)
-        #        predicates.append(predicate)
+        nested_pred = True
+        sub_predicate_str = predicate_str.split("]")
+        if not sub_predicate_str[-1]:
+            sub_predicate_str.pop()
+        
+       # print(sub_predicate_str)
+       # last_sub_pred = sub_predicate_str[-1]
+       # print(last_sub_pred)
+       # operator_strings = [">", "<", ">=", "<=", "=", "!="]
+       # has_operator = any(operator_strings in last_sub_pred for operator_strings in operator_strings)
+       # if (not has_operator) and re.match(r"^\d*$", last_sub_pred[1:-1]):
+       #     nested_pred = False
+       # if (":" in predicate_str) and re.match(r"[0-9]:[0-9]", predicate_str):
+       #     nested_pred = False
+        
+        #print(nested_pred)
+        if not nested_pred:
+            for sub_p_str in sub_predicate_str:
+                sub_p_str += "]"
+                if "[" in predicate_str and "]" in sub_p_str:
+                    predicate = self._parse_predicate_slice(sub_p_str)
+                    predicate.support_nested = False
+                    predicates.append(predicate)
+        else:
+            if "[" in predicate_str and "]" in predicate_str:
+                predicate = self._parse_predicate(predicate_str, [])
+                predicates.extend(predicate)
 
         return node_test, predicates
-
-    # TODO: parse nested predicates e.g. /child::A[child::B[child::C = 3]]
-    # /child::A[child::B and child::C]
-    # /child::A[(child::B and child::C) or child::D]
-    # /child::A[((child::B and child::C) and child::F) or child::D]
-    # /child::A[child::B[child::C = 3] or child::B[child::D=7]]
-    def _parse_predicate(self, predicate_str: str) -> Predicate:
+    
+    def _parse_predicate_slice(self, predicate_str: str) -> Predicate:
         operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL, "sel": Operator.ARRAY_SELECT_SINGLE, ":": Operator.ARRAY_SELECT_SLICE}
         # take out brackets
-        # predicate_str = predicate_str[1:-1]
-        if "[" in predicate_str[1:]:
-            # strip first bracket
-            predicate_str = predicate_str[1:]
-            next_square_bracket = predicate_str.find("[")
-            # TODO: no support for AND and OR predicates
-            curr_predicate = predicate_str[:next_square_bracket]
-            left_operand_str = curr_predicate.strip()
-            left_operand = self.parse(left_operand_str).steps
-            predicate_list.append(Predicate(left_operand))
-            return self._parse_predicate(predicate_str[next_square_bracket:], predicate_list)
+        predicate_str = predicate_str[1:-1]
 
-        predicate_str = predicate_str[1:predicate_str.find("]")]
         operator_str = None
-        if "=" in predicate_str:
-            operator_str = "="
+        if ">=" in predicate_str:
+            operator_str = ">="
         elif "!=" in predicate_str:
             operator_str = "!="
         elif "<=" in predicate_str:
@@ -158,6 +156,62 @@ class Parser:
                 left_operand_str, operator_map[operator_str], right_operand_str
             )
         elif operator_str:
+            left_operand_str, right_operand_str = predicate_str.split(operator_str, 1)
+            left_operand_str = left_operand_str.strip()
+
+            left_operand = self.parse(left_operand_str).steps
+            right_operand_str = right_operand_str.strip()
+            return Predicate(
+                left_operand, operator_map[operator_str], right_operand_str
+            )
+        else:
+            left_operand_str = predicate_str.strip()
+            left_operand = self.parse(left_operand_str).steps
+            return Predicate(left_operand)
+
+    # TODO: parse nested predicates e.g. /child::A[child::B[child::C = 3]]
+    # /child::A[child::B and child::C]
+    # /child::A[(child::B and child::C) or child::D]
+    # /child::A[((child::B and child::C) and child::F) or child::D]
+    # /child::A[child::B[child::C = 3] or child::B[child::D=7]]
+    def _parse_predicate(self, predicate_str: str, predicate_list: list) -> []:
+        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL, "sel": Operator.ARRAY_SELECT_SINGLE, ":": Operator.ARRAY_SELECT_SLICE}
+        # operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS}
+
+        # take out brackets
+        # predicate_str = predicate_str[1:-1]
+        print(predicate_str)
+        if "[" in predicate_str[1:]:
+            # strip first bracket
+            predicate_str = predicate_str[1:]
+            next_square_bracket = predicate_str.find("[")
+            # TODO: no support for AND and OR predicates
+            curr_predicate = predicate_str[:next_square_bracket]
+            left_operand_str = curr_predicate.strip()
+            left_operand = self.parse(left_operand_str).steps
+            predicate_list.append(Predicate(left_operand))
+            return self._parse_predicate(predicate_str[next_square_bracket:], predicate_list)
+
+        predicate_str = predicate_str[1:predicate_str.find("]")]
+        operator_str = None
+        if "!=" in predicate_str:
+            operator_str = "!="
+        elif ">=" in predicate_str:
+            operator_str = ">="
+        elif "<=" in predicate_str:
+            operator_str = "<="
+        elif "=" in predicate_str:
+            operator_str = "="
+        elif "<" in predicate_str:
+            operator_str = "<"
+        elif ">" in predicate_str:
+            operator_str = ">"
+        elif re.match(r"^\d*$", predicate_str):
+            operator_str = "sel"
+        elif ":" in predicate_str and re.match(r"[0-9]:[0-9]", predicate_str):
+            operator_str = ":"
+
+        if operator_str:
             left_operand_str, right_operand_str = predicate_str.split(operator_str, 1)
             left_operand_str = left_operand_str.strip()
 

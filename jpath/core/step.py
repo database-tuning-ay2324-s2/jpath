@@ -45,17 +45,18 @@ class Predicate:
     # Example 1: [child::car_code = '1234'] Check if the element has a child element with the name car_code and the value is 1234
     # Example 2: [child::car_code] Check if the element has a child element with the name car_code. Note that in this case, operator and right operand are None
     def __init__(
-        self, left_operand: List["Step"], operator: Operator = None, right_operand: str =None
+        self, left_operand: List["Step"], operator: Operator = None, right_operand: str =None, support_nested = True
     ):
         self.left_operand =left_operand
         self.operator = operator
         self.right_operand = right_operand
+        self.support_nested = support_nested
 
     def __repr__(self) -> str:
         if self.operator:
-            return f"{self.left_operand} {self.operator} {self.right_operand}"
+            return f"{self.left_operand} {self.operator} {self.right_operand} {self.support_nested}"
         else:
-            return f"{self.left_operand}"
+            return f"{self.left_operand} {self.support_nested}"
 
 
 # A location path is a sequence of location steps. The locations steps are separated by a slash. e.g. /step1/step2/step3
