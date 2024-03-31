@@ -91,20 +91,19 @@ class Parser:
         # Parsing predicates
         nested_pred = True
         sub_predicate_str = predicate_str.split("]")
-        if not sub_predicate_str[-1]:
-            sub_predicate_str.pop()
+        if not sub_predicate_str:
+            nested_pred = False
+        else:
+            if not sub_predicate_str[-1] and len(sub_predicate_str) > 1:
+                sub_predicate_str.pop()
+            last_sub_pred = sub_predicate_str[-1]
+            operator_strings = [">", "<", ">=", "<=", "=", "!="]
+            has_operator = any(operator_strings in last_sub_pred for operator_strings in operator_strings)
+            if (not has_operator) and re.match(r"^\d*$", last_sub_pred[1:-1]):
+                nested_pred = False
+            if (":" in last_sub_pred) and re.match(r"[0-9]:[0-9]", last_sub_pred[1:]):
+                nested_pred = False
         
-       # print(sub_predicate_str)
-       # last_sub_pred = sub_predicate_str[-1]
-       # print(last_sub_pred)
-       # operator_strings = [">", "<", ">=", "<=", "=", "!="]
-       # has_operator = any(operator_strings in last_sub_pred for operator_strings in operator_strings)
-       # if (not has_operator) and re.match(r"^\d*$", last_sub_pred[1:-1]):
-       #     nested_pred = False
-       # if (":" in predicate_str) and re.match(r"[0-9]:[0-9]", predicate_str):
-       #     nested_pred = False
-        
-        #print(nested_pred)
         if not nested_pred:
             for sub_p_str in sub_predicate_str:
                 sub_p_str += "]"
@@ -180,7 +179,7 @@ class Parser:
 
         # take out brackets
         # predicate_str = predicate_str[1:-1]
-        print(predicate_str)
+        # print(predicate_str)
         if "[" in predicate_str[1:]:
             # strip first bracket
             predicate_str = predicate_str[1:]
