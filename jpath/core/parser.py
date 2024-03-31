@@ -89,31 +89,38 @@ class Parser:
 
         # Parsing predicates
         if "[" in predicate_str and "]" in predicate_str:
-            predicate = self._parse_predicate(predicate_str)
-            predicates.append(predicate)
+            predicate = self._parse_predicate(predicate_str, [])
+            predicates.extend(predicate)
 
         return node_test, predicates
 
     # TODO: parse nested predicates e.g. /child::A[child::B[child::C = 3]]
-    def _parse_predicate(self, predicate_str: str) -> Predicate:
-        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS, "<": Operator.LESS_THAN, ">": Operator.GREATER_THAN, ">=": Operator.GREATER_THAN_OR_EQUAL, "<=": Operator.LESS_THAN_OR_EQUAL}
+    # /child::A[child::B and child::C]
+    # /child::A[(child::B and child::C) or child::D]
+    # /child::A[((child::B and child::C) and child::F) or child::D]
+    # /child::A[child::B[child::C = 3] or child::B[child::D=7]]
+    def _parse_predicate(self, predicate_str: str, predicate_list: list) -> []:
+        operator_map = {"=": Operator.EQUALS, "!=": Operator.NOT_EQUALS}
 
         # take out brackets
-        predicate_str = predicate_str[1:-1]
+        # predicate_str = predicate_str[1:-1]
+        if "[" in predicate_str[1:]:
+            # strip first bracket
+            predicate_str = predicate_str[1:]
+            next_square_bracket = predicate_str.find("[")
+            # TODO: no support for AND and OR predicates
+            curr_predicate = predicate_str[:next_square_bracket]
+            left_operand_str = curr_predicate.strip()
+            left_operand = self.parse(left_operand_str).steps
+            predicate_list.append(Predicate(left_operand))
+            return self._parse_predicate(predicate_str[next_square_bracket:], predicate_list)
 
+        predicate_str = predicate_str[1:predicate_str.find("]")]
         operator_str = None
-        if ">=" in predicate_str:
-            operator_str = ">="
+        if "=" in predicate_str:
+            operator_str = "="
         elif "!=" in predicate_str:
             operator_str = "!="
-        elif "<=" in predicate_str:
-            operator_str = "<="
-        elif "=" in predicate_str:
-            operator_str = "="
-        elif "<" in predicate_str:
-            operator_str = "<"
-        elif ">" in predicate_str:
-            operator_str = ">"
 
         if operator_str:
             left_operand_str, right_operand_str = predicate_str.split(operator_str, 1)
@@ -121,10 +128,12 @@ class Parser:
 
             left_operand = self.parse(left_operand_str).steps
             right_operand_str = right_operand_str.strip()
-            return Predicate(
-                left_operand, operator_map[operator_str], right_operand_str
+            predicate_list.append(
+                Predicate(left_operand, operator_map[operator_str], right_operand_str)
             )
+            return predicate_list
         else:
             left_operand_str = predicate_str.strip()
             left_operand = self.parse(left_operand_str).steps
-            return Predicate(left_operand)
+            predicate_list.append(Predicate(left_operand))
+            return predicate_list
