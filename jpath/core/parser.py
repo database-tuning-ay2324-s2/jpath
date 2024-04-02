@@ -99,7 +99,7 @@ class Parser:
             last_sub_pred = sub_predicate_str[-1]
             operator_strings = [">", "<", ">=", "<=", "=", "!="]
             has_operator = any(operator_strings in last_sub_pred for operator_strings in operator_strings)
-            if (not has_operator) and re.match(r"^\d*$", last_sub_pred[1:-1]):
+            if (not has_operator) and re.match(r"^\d*$", last_sub_pred[1:]) and last_sub_pred:
                 nested_pred = False
             if (":" in last_sub_pred) and re.match(r"[0-9]:[0-9]", last_sub_pred[1:]):
                 nested_pred = False
